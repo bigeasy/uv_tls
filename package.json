@@ -1,0 +1,32 @@
+{
+    "name":             "uv_tls",
+    "version":          "0.0.6",
+    "author":           "Alan Gutierrez <alan@prettyrobots.com>",
+    "description":      "A TLS socket implementation of the libuv TCP socket interface.",
+    "keywords":
+    [
+    ],
+    "contributors":     [],
+    "homepage":         "https://github.com/bigeasy/uv_tls",
+    "bugs":             "https://github.com/bigeasy/uv_tls/issues",
+    "licenses":
+    [{
+                        "type": "MIT",
+                        "url": "http://github.com/bigeasy/uv_tls/raw/master/LICENSE"
+    }],
+    "repository":
+    {
+                        "type": "git",
+                        "url": "http://github.com/bigeasy/uv_tls.git"
+    },
+    "dependencies":
+    {
+                        "riffle":             "0.0.5"
+    },
+    "devDependencies":
+    {
+    },
+    "scripts":
+    {
+    }
+}
