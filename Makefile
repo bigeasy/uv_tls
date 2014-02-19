@@ -1,10 +1,7 @@
 all: ./build ./build/out/Release/myapp
 
-./deps/gyp:
-	git clone --depth 1 https://chromium.googlesource.com/external/gyp.git ./deps/gyp
-
 ./build: ./deps/gyp
-	deps/gyp/gyp uv_tls.gyp --depth=. -f make --generator-output=./build
+	gyp uv_tls.gyp --depth=. -f make --generator-output=./build
 
 ./build/out/Release/myapp: ./build/
 	make -C ./build
