@@ -8,9 +8,18 @@
 #include "buffer.h"
 #include "uv_tls.h"
 
-#define check(program, err, label) \
+typedef struct echo_s {
+    uv_loop_t *loop;
+    uv_tcp_t tcp;
+    uv_tls_t tls;
+    SSL_CTX *ssl_ctx;
+} echo_t;
+
+static echo_t echo;
+
+#define check(err, label) \
     if (err) { \
-        uv_err_t _uv_err = uv_last_error(loop); \
+        uv_err_t _uv_err = uv_last_error(echo.loop); \
         fprintf(stderr, "error %s: %s\n", uv_err_name(_uv_err), uv_strerror(_uv_err)); \
         goto label; \
     }
@@ -71,8 +80,32 @@ static void ping ()
  //   uv_tls_buffer_shift(&program->write, buffer, sizeof(buffer));
 }
 
+static void read_cb (uv_stream_t* stream, ssize_t nread, uv_buf_t buf)
+{
+}
 
-void echo_connect_cb (uv_connect_t* connect, int status) {
+static uv_buf_t alloc_cb (uv_handle_t* handle, size_t suggested_size)
+{
+    uv_buf_t buf;
+
+    fprintf(stderr, "uv_tls_alloc_cb\n");
+
+    buf.base = malloc(suggested_size);
+    buf.len = suggested_size;
+
+    return buf;
+}
+
+void echo_connect_cb (uv_connect_t* connect, int status)
+{
+    int err;
+    check(status, failure);
+    fprintf(stderr, "status: %d\n", status);
+    uv_tls_connect(&echo.tls, &echo.tcp, echo.ssl_ctx);
+    //int err;
+    return;
+failure:
+    return;
 }
 
 int main ()
@@ -80,36 +113,33 @@ int main ()
     struct sockaddr_in addr;
     int err;
     uv_connect_t connect;
-    uv_loop_t *loop;
     BIO* bio_err;
-    uv_tls_t tls;
 
     SSL_library_init();
     SSL_load_error_strings();
 
     bio_err = BIO_new_fp(stderr, BIO_NOCLOSE);
-    tls.ssl_ctx = SSL_CTX_new(SSLv3_client_method());
+    echo.ssl_ctx = SSL_CTX_new(SSLv3_client_method());
 
-    SSL_CTX_set_options(tls.ssl_ctx, SSL_OP_NO_SSLv2);
-    SSL_CTX_set_verify(tls.ssl_ctx, SSL_VERIFY_PEER, ssl_verify_callback);
-    SSL_CTX_set_info_callback(tls.ssl_ctx, ssl_info_callback);
-    SSL_CTX_set_msg_callback(tls.ssl_ctx, ssl_msg_callback);
+    SSL_CTX_set_options(echo.ssl_ctx, SSL_OP_NO_SSLv2);
+    SSL_CTX_set_verify(echo.ssl_ctx, SSL_VERIFY_PEER, ssl_verify_callback);
+    SSL_CTX_set_info_callback(echo.ssl_ctx, ssl_info_callback);
+    SSL_CTX_set_msg_callback(echo.ssl_ctx, ssl_msg_callback);
 
-    loop = uv_loop_new();
-
-    uv_tls_init(&tls);
+    echo.loop = uv_loop_new();
 
     addr = uv_ip4_addr("127.0.0.1", 8386);
 
-    err = uv_tcp_init(loop, &tls.tcp);
-    check(loop, err, fail);
+    err = uv_tcp_init(echo.loop, &echo.tcp);
+    check(err, failure);
 
-    uv_tls_connect(&connect, &tls, addr, echo_connect_cb);
-    check(loop, err, fail);
+    err = uv_tcp_connect(&connect, &echo.tcp, addr, echo_connect_cb);
+    check(err, failure);
 
-    uv_run(loop, UV_RUN_DEFAULT);
+    err = uv_run(echo.loop, UV_RUN_DEFAULT);
+    check(err, failure);
 
     return EXIT_SUCCESS;
-fail:
+failure:
     return EXIT_FAILURE;
 }

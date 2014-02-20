@@ -1,5 +1,6 @@
 ### Issue by Issue
 
+ * TLS library starts on connect. #21.
  * Extract TLS to library. #20.
  * Connect to SSL server. #19.
  * Configure SSL. #18.

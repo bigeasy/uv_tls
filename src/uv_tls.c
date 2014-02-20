@@ -13,16 +13,6 @@
         goto label; \
     }
 
-void uv_tls_init (uv_tls_t* tls)
-{
-    tls->canary = 0xa0a0a0a0;
-    tls->write.data = tls;
-    tls->ssl = NULL;
-    tls->connect.data = tls;
-    uv_tls_buffer_init(&tls->input);
-    uv_tls_buffer_init(&tls->output);
-}
-
 static void write_cb (uv_write_t* write, int status)
 {
     fprintf(stderr, "written\n");
@@ -38,9 +28,10 @@ static void uv_tls_ssl_flush_read_bio (uv_tls_t *tls)
     buf.len = sizeof(data);
 
     if ((bytes_read = BIO_read(tls->write_bio, data, sizeof(data))) > 0) {
-        fprintf(stderr, "read: %d\n", bytes_read);
         buf.len = bytes_read;
-        err = uv_write(&tls->write, (uv_stream_t*)&tls->tcp, &buf, 1, write_cb);
+        fprintf(stderr, "x read: %d\n", bytes_read);
+        err = uv_write(&tls->write, (uv_stream_t*)tls->tcp, &buf, 1, write_cb);
+        fprintf(stderr, "read: %d\n", bytes_read);
         check(tls, err, fail);
     }
 
@@ -137,19 +128,64 @@ static void uv_tls_connect_cb (uv_connect_t* connect, int status)
 
     uv_tls_ssl_update(tls);
 
-    err = uv_read_start((uv_stream_t*) &tls->tcp, uv_tls_alloc_cb, uv_tls_read_cb);
+    err = uv_read_start((uv_stream_t*) tls->tcp, uv_tls_alloc_cb, uv_tls_read_cb);
     return;
 failure:
     fprintf(stderr, "errored");
     return;
 }
 
-void uv_tls_connect (
-    uv_connect_t* connect, uv_tls_t* tls, struct sockaddr_in addr, uv_connect_cb connect_cb
-) {
+void *uv_tls_data (uv_tcp_t *tcp)
+{
+    uv_tls_t *tls = tcp->data;
+    return tls->data;
+}
+
+void uv_tls_connect (uv_tls_t* tls, uv_tcp_t *tcp, SSL_CTX *ssl_ctx) {
     int err;
-    tls->sub.connect = connect;
-    tls->loop = tls->tcp.loop;
-    tls->tcp.data = tls;
-    err = uv_tcp_connect(&tls->connect, &tls->tcp, addr, uv_tls_connect_cb);
+
+    fprintf(stderr, "hello\n");
+
+    assert(tcp->data == NULL);
+    tcp->data = tls;
+    tls->tcp = tcp;
+    tls->loop = tcp->loop;
+    tls->ssl_ctx = ssl_ctx;
+
+    uv_tls_buffer_init(&tls->input);
+    uv_tls_buffer_init(&tls->output);
+
+    tls->canary = 0xa0a0a0a0;
+
+    tls->ssl = SSL_new(tls->ssl_ctx);
+    tls->read_bio = BIO_new(BIO_s_mem());
+    tls->write_bio = BIO_new(BIO_s_mem());
+
+    assert(tls->ssl);
+    assert(tls->ssl && tls->read_bio && tls->write_bio);
+
+    SSL_set_bio(tls->ssl, tls->read_bio, tls->write_bio);
+    SSL_set_connect_state(tls->ssl);
+
+    err = SSL_do_handshake(tls->ssl);
+    if (err == -1) {
+        switch (SSL_get_error(tls->ssl, err)) {
+        case SSL_ERROR_WANT_READ:
+            fprintf(stderr, "Want read.\n");
+            break;
+        case SSL_ERROR_WANT_WRITE:
+            fprintf(stderr, "Want write.\n");
+            break;
+        }
+    }
+
+    fprintf(stderr, "Connected %d.\n", err);
+
+    uv_tls_ssl_update(tls);
+
+    err = uv_read_start((uv_stream_t*) tls->tcp, uv_tls_alloc_cb, uv_tls_read_cb);
+    return;
+failure:
+    fprintf(stderr, "errored");
+    return;
 }
