@@ -26,7 +26,8 @@
             "target_name": "uv_tls_test",
             "type": "executable",
             "sources": [
-                "./src/main.c"
+                "./src/main.c",
+                "./src/buffer.c"
             ],
             "include_dirs": [
                 "include",

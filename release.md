@@ -1,5 +1,6 @@
 ### Issue by Issue
 
+ * Connect to SSL server. #19.
  * Configure SSL. #18.
  * Add `ringbuffer` dependency. #17.
  * Connect to a TCP server. #16.

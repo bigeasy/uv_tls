@@ -7,6 +7,7 @@ var options = {
 }
 
 var server = tls.createServer(options, function(stream) {
+     console.log('connect');
     stream.on('data', function (chunk) {
         console.log({ length: chunk.length })
         setTimeout(function () {
