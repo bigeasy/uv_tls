@@ -23,7 +23,7 @@ typedef struct {
     BIO *write_bio;
     ringbuffer read;
     ringbuffer write;
-  } test_program_t;
+} test_program_t;
 
 static uv_buf_t alloc_cb (uv_handle_t* handle, size_t suggested_size)
 {
