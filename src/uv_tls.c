@@ -33,10 +33,10 @@ static void uv_tls_check_write (uv_tls_t *tls)
             write->prev->next = write->next;
         }
 
-        fprintf(stderr, "writing: %d\n", write->bufs[0].len);
+        fprintf(stderr, "writing: %zu\n", write->bufs[0].len);
         buf = *(write->bufs + index);
 
-        fprintf(stderr, "writing: %d\n", buf.len);
+        fprintf(stderr, "writing: %zu\n", buf.len);
         err = SSL_write(tls->ssl, buf.base, buf.len);
         fprintf(stderr, "writing\n");
 

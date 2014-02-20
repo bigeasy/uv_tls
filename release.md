@@ -1,5 +1,6 @@
 ### Issue by Issue
 
+ * Remove `printf` type errors. #24.
  * Remove unused buffer object. #23.
  * Transmit encrypted data. #22.
  * TLS library starts on connect. #21.
