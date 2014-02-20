@@ -4,6 +4,7 @@
 #include<uv.h>
 #include<openssl/ssl.h>
 #include<openssl/bio.h>
+#include<ringbuffer.h>
 
 #define check(program, err, label) \
     if (err) { \
@@ -54,6 +55,10 @@ int main ()
     struct sockaddr_in addr;
     int err;
     test_program_t program;
+    ringbuffer in;
+
+    ringbuffer_init(&in);
+
 
     SSL_library_init();
 

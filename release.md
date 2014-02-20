@@ -1,5 +1,6 @@
 ### Issue by Issue
 
+ * Add `ringbuffer` dependency. #17.
  * Connect to a TCP server. #16.
  * Add Node.js test server. #15.
  * Dummy server. #14.
