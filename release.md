@@ -1,5 +1,6 @@
 ### Issue by Issue
 
+ * Receive data from server. #25.
  * Remove `printf` type errors. #24.
  * Remove unused buffer object. #23.
  * Transmit encrypted data. #22.

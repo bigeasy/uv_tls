@@ -84,22 +84,25 @@ static void ping (uv_tls_t *tls)
     uv_buf_t buf;
     buf.base = buffer;
     buf.len = sizeof(buffer);
-    fprintf(stderr, "buffer: %d\n", buf.len);
+    fprintf(stderr, "buffer: %zu\n", buf.len);
     uv_tls_write_t *write = malloc(sizeof (uv_tls_write_t));
 
     uv_tls_write(write, tls, &buf, 1, write_cb);
  //   uv_tls_buffer_shift(&program->write, buffer, sizeof(buffer));
 }
 
-static void read_cb (uv_stream_t* stream, ssize_t nread, uv_buf_t buf)
+static void echo_on_read (uv_tls_t* tls, ssize_t nread, uv_buf_t buf)
 {
+    uint32_t value = *(uint32_t*)buf.base;
+    fprintf(stderr, "application read: %#010x\n", value);
+    ping(tls);
 }
 
-static uv_buf_t alloc_cb (uv_handle_t* handle, size_t suggested_size)
+static uv_buf_t echo_on_alloc (uv_tls_t* tls, size_t suggested_size)
 {
     uv_buf_t buf;
 
-    fprintf(stderr, "uv_tls_alloc_cb\n");
+    fprintf(stderr, "echo_on_alloc\n");
 
     buf.base = malloc(suggested_size);
     buf.len = suggested_size;
@@ -113,6 +116,7 @@ void echo_connect_cb (uv_connect_t* connect, int status)
     check(status, failure);
     fprintf(stderr, "status: %d\n", status);
     uv_tls_connect(&echo.tls, &echo.tcp, echo.ssl_ctx);
+    uv_tls_read_start(&echo.tls, echo_on_alloc, echo_on_read);
 
     ping(&echo.tls);
 
