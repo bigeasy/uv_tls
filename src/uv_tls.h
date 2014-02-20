@@ -29,9 +29,6 @@ struct uv_tls_s {
 
     uv_write_t write;
 
-    uv_tls_buffer_t input;
-    uv_tls_buffer_t output;
-
     uv_tls_write_t *writes;
     uv_tls_write_t writes_head;
 

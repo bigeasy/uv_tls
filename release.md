@@ -1,5 +1,6 @@
 ### Issue by Issue
 
+ * Remove unused buffer object. #23.
  * Transmit encrypted data. #22.
  * TLS library starts on connect. #21.
  * Extract TLS to library. #20.

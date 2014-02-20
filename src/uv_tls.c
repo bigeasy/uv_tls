@@ -3,7 +3,6 @@
 #include <openssl/bio.h>
 #include <openssl/ssl.h>
 
-#include "buffer.h"
 #include "uv_tls.h"
 
 #define check(tls, err, label) \
@@ -212,9 +211,6 @@ void uv_tls_connect (uv_tls_t* tls, uv_tcp_t *tcp, SSL_CTX *ssl_ctx) {
     tls->ssl_ctx = ssl_ctx;
 
     tls->writing = FALSE;
-
-    uv_tls_buffer_init(&tls->input);
-    uv_tls_buffer_init(&tls->output);
 
     tls->canary = 0xa0a0a0a0;
 
