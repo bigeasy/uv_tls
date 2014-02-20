@@ -1,5 +1,6 @@
 ### Issue by Issue
 
+ * Extract TLS to library. #20.
  * Connect to SSL server. #19.
  * Configure SSL. #18.
  * Add `ringbuffer` dependency. #17.
