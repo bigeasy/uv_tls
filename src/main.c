@@ -37,7 +37,7 @@ static echo_t echo;
 static void ssl_info_callback(const SSL* ssl, int where, int ret)
 {
     if(ret == 0) {
-        printf("dummy_ssl_info_callback, error occured.\n");
+        fprintf(stderr, "dummy_ssl_info_callback, error occured.\n");
         return;
     }
     WHERE_INFO(ssl, where, SSL_CB_LOOP, "LOOP");
@@ -68,15 +68,26 @@ static int ssl_verify_callback(int ok, X509_STORE_CTX* store) {
     X509_NAME* cert_name = X509_get_subject_name(err_cert);
     X509_NAME_print_ex(outbio, cert_name, 0, XN_FLAG_MULTILINE);
     BIO_free_all(outbio);
-    printf("\tssl_verify_callback(), ok: %d, error: %d, depth: %d, name: %s\n", ok, err, depth, buf);
+    fprintf(stderr, "\tssl_verify_callback(), ok: %d, error: %d, depth: %d, name: %s\n", ok, err, depth, buf);
 
     return 1;  // We always return 1, so no verification actually
 }
 
-static void ping ()
+static void write_cb (uv_tls_write_t *write, int status)
 {
-//    char buffer[] = { 1, 2, 3, 4 };
+    free(write);
+}
 
+static void ping (uv_tls_t *tls)
+{
+    static char buffer[] = { 1, 2, 3, 4 };
+    uv_buf_t buf;
+    buf.base = buffer;
+    buf.len = sizeof(buffer);
+    fprintf(stderr, "buffer: %d\n", buf.len);
+    uv_tls_write_t *write = malloc(sizeof (uv_tls_write_t));
+
+    uv_tls_write(write, tls, &buf, 1, write_cb);
  //   uv_tls_buffer_shift(&program->write, buffer, sizeof(buffer));
 }
 
@@ -102,6 +113,9 @@ void echo_connect_cb (uv_connect_t* connect, int status)
     check(status, failure);
     fprintf(stderr, "status: %d\n", status);
     uv_tls_connect(&echo.tls, &echo.tcp, echo.ssl_ctx);
+
+    ping(&echo.tls);
+
     //int err;
     return;
 failure:

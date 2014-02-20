@@ -18,6 +18,58 @@ static void write_cb (uv_write_t* write, int status)
     fprintf(stderr, "written\n");
 }
 
+static void uv_tls_ssl_flush_read_bio(uv_tls_t *tls);
+
+static void uv_tls_check_write (uv_tls_t *tls)
+{
+    int index, err;
+    uv_buf_t buf;
+    uv_tls_write_t *write;
+    if (!tls->writing && SSL_is_init_finished(tls->ssl) && tls->writes->next->tls) {
+        write = tls->writes->next;
+        index = write->index;
+
+        if (++write->index == write->count) {
+            write->next->prev = write->prev;
+            write->prev->next = write->next;
+        }
+
+        fprintf(stderr, "writing: %d\n", write->bufs[0].len);
+        buf = *(write->bufs + index);
+
+        fprintf(stderr, "writing: %d\n", buf.len);
+        err = SSL_write(tls->ssl, buf.base, buf.len);
+        fprintf(stderr, "writing\n");
+
+        uv_tls_ssl_flush_read_bio(tls);
+    }
+    return;
+failure:
+    return;
+}
+
+void uv_tls_write (uv_tls_write_t *write, uv_tls_t* tls,
+    uv_buf_t bufs[], int bufcnt, uv_tls_write_cb write_cb)
+{
+    int i;
+    write->application = TRUE;
+    write->tls = tls;
+    write->bufs = malloc(sizeof(uv_buf_t) * bufcnt);
+    write->count = bufcnt;
+    write->write_cb = write_cb;
+    write->write.data = write;
+
+    for (i = 0; i < bufcnt; i++) {
+        write->bufs[i] = bufs[i];
+    }
+
+    write->next = tls->writes;
+    write->prev = tls->writes->prev;
+    write->next->prev = write->prev->next = write;
+
+    uv_tls_check_write(tls);
+}
+
 static void uv_tls_ssl_flush_read_bio (uv_tls_t *tls)
 {
     char data[1024*16];
@@ -64,6 +116,7 @@ static void uv_tls_ssl_update (uv_tls_t* tls)
         if (!uv_tls_ssl_check_want_read(tls, err) && err > 0) {
         }
     }
+    uv_tls_check_write(tls);
 }
 
 static uv_buf_t uv_tls_alloc_cb (uv_handle_t* handle, size_t suggested_size)
@@ -148,9 +201,17 @@ void uv_tls_connect (uv_tls_t* tls, uv_tcp_t *tcp, SSL_CTX *ssl_ctx) {
 
     assert(tcp->data == NULL);
     tcp->data = tls;
+
+    tls->writes = &tls->writes_head;
+    tls->writes_head.next = &tls->writes_head;
+    tls->writes_head.prev = &tls->writes_head;
+    tls->writes_head.tls = NULL;
+
     tls->tcp = tcp;
     tls->loop = tcp->loop;
     tls->ssl_ctx = ssl_ctx;
+
+    tls->writing = FALSE;
 
     uv_tls_buffer_init(&tls->input);
     uv_tls_buffer_init(&tls->output);
