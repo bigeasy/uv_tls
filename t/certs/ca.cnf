@@ -1,0 +1,17 @@
+[ req ]
+default_bits           = 1024
+days                   = 999
+distinguished_name     = req_distinguished_name
+prompt                 = no
+output_password        = password
+
+[ req_distinguished_name ]
+C                      = US
+ST                     = LA
+L                      = New Orleans
+O                      = uv_tls
+OU                     = uv_tls
+CN                     = ca
+emailAddress           = alan@prettyrobots.com
+
+[ req_attributes ]

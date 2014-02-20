@@ -1,3 +1,5 @@
 /deps/gyp
 /build
 /local.gypi
+/t/certs/*.pem
+/t/certs/*.srl
