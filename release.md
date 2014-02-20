@@ -1,5 +1,6 @@
 ### Issue by Issue
 
+ * Configure SSL. #18.
  * Add `ringbuffer` dependency. #17.
  * Connect to a TCP server. #16.
  * Add Node.js test server. #15.
