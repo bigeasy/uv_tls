@@ -1,18 +1,23 @@
-var tls = require('tls');
-var fs = require('fs');
+var tls = require('tls')
+var fs = require('fs')
 
 var options = {
-  key: fs.readFileSync('server-key.pem'),
-  cert: fs.readFileSync('server-cert.pem')
-};
+    key: fs.readFileSync('t/certs/agent-key.pem'),
+    cert: fs.readFileSync('t/certs/agent-cert.pem')
+}
 
-var server = tls.createServer(options, function(cleartextStream) {
-  console.log('server connected',
-              cleartextStream.authorized ? 'authorized' : 'unauthorized');
-  cleartextStream.write("welcome!\n");
-  cleartextStream.setEncoding('utf8');
-  cleartextStream.pipe(cleartextStream);
-});
-server.listen(8000, function() {
-  console.log('server bound');
-});
+var server = tls.createServer(options, function(stream) {
+    stream.on('data', function (chunk) {
+        console.log({ length: chunk.length })
+        setTimeout(function () {
+            console.log('sending')
+            stream.write(chunk)
+        }, 1000)
+    })
+    stream.on('end', function() {
+        console.log('server disconnected')
+    })
+})
+server.listen(8386, function() {
+    console.log('server bound')
+})

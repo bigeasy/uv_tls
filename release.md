@@ -1,5 +1,6 @@
 ### Issue by Issue
 
+ * Add Node.js test server. #15.
  * Dummy server. #14.
  * Link to necssary libraries on Linux. #12.
  * Specify loction of UV and OpenSSL headers. #8.
