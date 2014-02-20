@@ -1,0 +1,7 @@
+{
+    "target_defaults": {
+        "link_settings": {
+            "ldflags": [ "-lssl", "-lcrypto", "-luv" ]
+        }
+    }
+}
