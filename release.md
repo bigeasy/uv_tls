@@ -1,5 +1,6 @@
 ### Issue by Issue
 
+ * Connect to a TCP server. #16.
  * Add Node.js test server. #15.
  * Dummy server. #14.
  * Link to necssary libraries on Linux. #12.
