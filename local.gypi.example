@@ -1,7 +1,0 @@
-{
-    "target_defaults": {
-        "include_dirs": [
-            "<!(echo $HOME)/.usr/include"
-        ]
-    }
-}

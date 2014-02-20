@@ -1,0 +1,18 @@
+{
+    "variables": {
+        "homebrew_root%": "<!(echo $HOMEBREW_ROOT)"
+    },
+    "target_defaults": {
+        "include_dirs": [
+            "<(homebrew_root)/Cellar/openssl/1.0.1f/include",
+            "<(homebrew_root)/include"
+        ],
+        "link_settings": {
+            "libraries": [
+                "<(homebrew_root)/Cellar/openssl/1.0.1f/lib/libssl.a",
+                "<(homebrew_root)/Cellar/openssl/1.0.1f/lib/libcrypto.a",
+                "<(homebrew_root)/lib/libuv.dylib",
+            ]
+        }
+    }
+}
