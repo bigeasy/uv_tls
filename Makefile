@@ -1,6 +1,6 @@
 all: ./build submake
 
-./build: ./deps/gyp
+./build:
 	gyp uv_tls.gyp --depth=. -f make --generator-output=./build
 
 submake:
