@@ -27,7 +27,6 @@
             "type": "executable",
             "sources": [
                 "./src/main.c",
-                "./src/buffer.c"
             ],
             "include_dirs": [
                 "include",

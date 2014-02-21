@@ -5,7 +5,6 @@
 #include<openssl/ssl.h>
 #include<openssl/bio.h>
 
-#include "buffer.h"
 #include "uv_tls.h"
 
 typedef struct echo_s {
