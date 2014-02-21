@@ -26,8 +26,6 @@ struct uv_tls_s {
     SSL_CTX *ssl_ctx;
 
     SSL *ssl;
-    BIO *read_bio;
-    BIO *write_bio;
 
     uv_write_t write;
 
@@ -36,6 +34,11 @@ struct uv_tls_s {
 
     uv_tls_alloc_cb alloc_cb;
     uv_tls_read_cb read_cb;
+
+    BIO *bio_io;
+    BIO *bio_ssl;
+
+    BIO *ssl_bio;
 
     boolean_t writing;
 

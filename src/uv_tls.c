@@ -13,6 +13,8 @@
         goto label; \
     }
 
+static BIO *bio_err = NULL;
+
 static boolean_t is_ssl_error (SSL *ssl, int err)
 {
     if (err > 0) return FALSE;
@@ -27,6 +29,19 @@ static boolean_t is_ssl_error (SSL *ssl, int err)
 }
 
 #define check_ssl(tls, err, label) if (is_ssl_error((tls)->ssl, err)) goto label
+#define check_bio(err, label) if (is_bio_err(err)) goto label
+
+static int is_bio_err (int err)
+{
+    if (!err) {
+        if (bio_err == NULL) {
+            bio_err = BIO_new_fp(stderr, BIO_NOCLOSE|BIO_FP_TEXT);
+        }
+        ERR_print_errors(bio_err);
+        return TRUE;
+    }
+    return FALSE;
+}
 
 static void write_cb (uv_write_t* write, int status)
 {
@@ -56,7 +71,7 @@ static void uv_tls_check_write (uv_tls_t *tls)
         buf = *(write->bufs + index);
 
         fprintf(stderr, "writing: %zu\n", buf.len);
-        err = SSL_write(tls->ssl, buf.base, buf.len);
+        err = BIO_write(tls->ssl_bio, buf.base, buf.len);
         fprintf(stderr, "writing\n");
 
         uv_tls_send(tls);
@@ -97,7 +112,7 @@ static int uv_tls_send (uv_tls_t *tls)
     buf.base = data;
     buf.len = sizeof(data);
 
-    if ((bytes_read = BIO_read(tls->write_bio, data, sizeof(data))) > 0) {
+    if ((bytes_read = BIO_read(tls->bio_io, data, sizeof(data))) > 0) {
         buf.len = bytes_read;
         fprintf(stderr, "x read: %d\n", bytes_read);
         err = uv_write(&tls->write, (uv_stream_t*)tls->tcp, &buf, 1, write_cb);
@@ -141,7 +156,7 @@ static void uv_tls_ssl_update (uv_tls_t* tls)
         fprintf(stderr, "CONNECT!: %d\n", err);
         check_want_read(tls, err, failure);
     } else {
-        err = SSL_read(tls->ssl, buffer, sizeof(buffer));
+        err = BIO_read(tls->ssl_bio, buffer, sizeof(buffer));
         check_want_read(tls, err, failure);
         if (err > 0) {
             buf = tls->alloc_cb(tls, err);
@@ -153,7 +168,7 @@ static void uv_tls_ssl_update (uv_tls_t* tls)
     if ((pending = SSL_pending(tls->ssl)) > 0) {
         fprintf(stderr, "PENDING: %d\n", pending);
         buf = tls->alloc_cb(tls, pending);
-        err = SSL_read(tls->ssl, buf.base, buf.len);
+        err = BIO_read(tls->ssl_bio, buf.base, buf.len);
         check_want_read(tls, err, failure);
         if (err >= 0) {
         }
@@ -183,7 +198,7 @@ static void uv_tls_on_read (uv_stream_t* stream, ssize_t nread, uv_buf_t buf)
     uv_tls_t *tls = (uv_tls_t*) stream->data;
     fprintf(stderr, "canary: %#010x\n", tls->canary);
     fprintf(stderr, "read: %zd\n", nread);
-    BIO_write(tls->read_bio, buf.base, nread);
+    BIO_write(tls->bio_io, buf.base, nread);
     uv_tls_ssl_update(tls);
 }
 
@@ -209,17 +224,13 @@ static void uv_tls_connect_cb (uv_connect_t* connect, int status)
 
     assert(tls->ssl_ctx);
     tls->ssl = SSL_new(tls->ssl_ctx);
-    tls->read_bio = BIO_new(BIO_s_mem());
-    tls->write_bio = BIO_new(BIO_s_mem());
 
     tls->alloc_cb = NULL;
     tls->read_cb = NULL;
 
     assert(tls->ssl);
-    assert(tls->ssl && tls->read_bio && tls->write_bio);
     fprintf(stderr, "status: %d\n", status);
 
-    SSL_set_bio(tls->ssl, tls->read_bio, tls->write_bio);
     SSL_set_connect_state(tls->ssl);
 
     SSL_do_handshake(tls->ssl);
@@ -243,6 +254,7 @@ void *uv_tls_data (uv_tcp_t *tcp)
 void uv_tls_connect (uv_tls_t* tls, uv_tcp_t *tcp, SSL_CTX *ssl_ctx)
 {
     int err;
+    size_t bufsiz = 4096;
 
     fprintf(stderr, "hello\n");
 
@@ -262,14 +274,21 @@ void uv_tls_connect (uv_tls_t* tls, uv_tcp_t *tcp, SSL_CTX *ssl_ctx)
 
     tls->canary = 0xa0a0a0a0;
 
+    err = BIO_new_bio_pair(&tls->bio_ssl, bufsiz, &tls->bio_io, bufsiz);
+    check_bio(err, failure);
+
+    tls->ssl_bio = BIO_new(BIO_f_ssl());
+    if (!tls->ssl_bio) {
+        fprintf(stderr, "cannot allocate ssl bio");
+        goto failure;
+    }
+
     tls->ssl = SSL_new(tls->ssl_ctx);
-    tls->read_bio = BIO_new(BIO_s_mem());
-    tls->write_bio = BIO_new(BIO_s_mem());
 
     assert(tls->ssl);
-    assert(tls->ssl && tls->read_bio && tls->write_bio);
 
-    SSL_set_bio(tls->ssl, tls->read_bio, tls->write_bio);
+    SSL_set_bio(tls->ssl, tls->bio_ssl, tls->bio_ssl);
+    (void)BIO_set_ssl(tls->ssl_bio, tls->ssl, BIO_NOCLOSE);
     SSL_set_connect_state(tls->ssl);
 
     err = SSL_do_handshake(tls->ssl);

@@ -1,5 +1,6 @@
 ### Issue by Issue
 
+ * Use BIO for all client I/O. #26.
  * Receive data from server. #25.
  * Remove `printf` type errors. #24.
  * Remove unused buffer object. #23.
